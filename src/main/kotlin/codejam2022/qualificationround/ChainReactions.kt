@@ -4,94 +4,50 @@ import BasePath
 import java.io.FileInputStream
 import java.util.Scanner
 
+object Answer {
+    var totalSum: Long = 0
+}
+
 class Node {
-    var funFactor: Int = 0
-    var next: Node? = null
-    var triggered = false
+    var funFactor: Long = 0
+    val children = mutableListOf<Node>()
+
+    fun dfs(): Long {
+        if (children.isEmpty()) {
+            return funFactor
+        }
+
+        val childrenValues = Array<Long>(children.size) {0}
+        for (i in childrenValues.indices) {
+            childrenValues[i] = children[i].dfs()
+        }
+        childrenValues.sort()
+
+        for (i in 1 until childrenValues.size) {
+            Answer.totalSum += childrenValues[i]
+        }
+        return maxOf(funFactor, childrenValues[0])
+    }
 }
 
 fun main() {
 //    val sc = Scanner(System.`in`)
     val sc =
-        Scanner(FileInputStream(BasePath().basePath + "CodeJam2022/QualificationRound/chain_reactions_sample_ts1_input.txt"))
-    sc.nextInt() // skip test case numbers
-    var count = 1
+        Scanner(FileInputStream(BasePath().basePath + "CodeJam2022/QualificationRound/chain_reactions/test_set_2/ts2_input.txt"))
 
-    var modules: Array<Node>
-    val initiators = mutableListOf<Node>()
-    var areInitiators: Array<Boolean>
-    var maxPathPair = Pair(mutableListOf<Node>(), mutableListOf<Int>())
-    var pointer: Int
+    val testCaseCount = sc.nextInt()
+    for (count in 1..testCaseCount) {
+        print("Case #${count}: ")
+        Answer.totalSum = 0
 
-    var totalSum: Int
-
-
-    while (sc.hasNextInt()) {
-        print("Case #${count++}: ")
-
-        totalSum = 0
-        modules = Array(sc.nextInt()) { Node() }
-        areInitiators = Array(modules.size) { true }
-        for (node in modules) {
-            node.funFactor = sc.nextInt()
+        val modules = Array(sc.nextInt()+1) { Node() }
+        for (i in 1 until modules.size) {
+            modules[i].funFactor = sc.nextLong()
         }
-        for (node in modules) {
-            pointer = sc.nextInt()
-            if (pointer != 0) {
-                node.next = modules[pointer - 1]
-                areInitiators[pointer - 1] = false
-            }
+        for (i in 1 until modules.size) {
+            modules[sc.nextInt()].children.add(modules[i])
         }
-
-        for (i in areInitiators.indices) {
-            if (areInitiators[i]) {
-                initiators.add(modules[i])
-            }
-        }
-
-        loop1@ while (initiators.isNotEmpty()) {
-            for (i in initiators.indices) {
-                var currNode = initiators[i]
-                var max = currNode.funFactor
-
-                if (currNode.next == null) {
-                    totalSum += max
-                    initiators.remove(currNode)
-                    maxPathPair = Pair(mutableListOf(), mutableListOf())
-                    continue@loop1
-                } else {
-                    while (currNode.next != null) {
-                        if (currNode.next!!.triggered) {
-                            break
-                        }
-                        max = maxOf(currNode.funFactor, max)
-                        currNode = currNode.next!!
-                    }
-                    maxPathPair.first.add(initiators[i])
-                    maxPathPair.second.add(max)
-                }
-            }
-
-            val selectedNode = maxPathPair.first[maxPathPair.second.indexOf(maxPathPair.second.minOrNull())]
-            var currNode = selectedNode
-            var max = currNode.funFactor
-            currNode.triggered = true
-
-            while (currNode.next != null) {
-                max = maxOf(currNode.funFactor, max)
-                currNode.triggered = true
-                if (currNode.next!!.triggered) {
-                    break
-                }
-                currNode = currNode.next!!
-            }
-            max = maxOf(currNode.funFactor, max)
-            currNode.triggered = true
-
-            totalSum += max
-            initiators.remove(selectedNode)
-            maxPathPair = Pair(mutableListOf(), mutableListOf())
-        }
-        println(totalSum)
+        Answer.totalSum += modules[0].dfs() + Answer.totalSum
+        println(Answer.totalSum)
     }
 }
